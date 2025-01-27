@@ -86,15 +86,12 @@ export const createRecipeInGrocyProcedure = protectedProcedure
 
       if (!grocyProduct) continue
 
-      const useAnyUnit: "1" | "0" =
-        ingredient.unitId === grocyProduct.qu_id_stock ? "0" : "1"
-
       const body = {
         recipe_id: recipeId,
         product_id: ingredient.productId,
         amount: ingredient.amount,
         qu_id: ingredient.unitId,
-        only_check_single_unit_in_stock: useAnyUnit,
+        only_check_single_unit_in_stock: "0",
         note: ingredient.note,
         ingredient_group: ingredient.group,
       }
