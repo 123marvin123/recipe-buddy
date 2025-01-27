@@ -19,7 +19,7 @@ export function DashboardHeader({
         <h1 className="font-heading text-3xl md:text-4xl">{heading}</h1>
         {text && <p className="text-muted-foreground text-lg">{text}</p>}
       </div>
-      {children}
+      <div className="ml-auto space-x-4">{children}</div>
     </div>
   )
 }

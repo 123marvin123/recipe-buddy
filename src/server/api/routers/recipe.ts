@@ -1,7 +1,10 @@
 import { deleteRecipeProcedure } from "~/server/api/modules/recipes/procedures/deleteRecipe"
 import { getRecipeByIdProcedure } from "~/server/api/modules/recipes/procedures/getById"
 import { listRecipesProcedure } from "~/server/api/modules/recipes/procedures/listRecipes"
-import { scrapeRecipeProcedure } from "~/server/api/modules/recipes/procedures/scrapeRecipe"
+import {
+  scrapeRecipeFromHtmlProcedure,
+  scrapeRecipeProcedure,
+} from "~/server/api/modules/recipes/procedures/scrapeRecipe"
 import {
   createTRPCRouter,
   protectedProcedure,
@@ -22,6 +25,7 @@ export const recipeRouter = createTRPCRouter({
     return "you can now see this secret message!"
   }),
   scrape: scrapeRecipeProcedure,
+  scrapeHtml: scrapeRecipeFromHtmlProcedure,
   list: listRecipesProcedure,
   get: getRecipeByIdProcedure,
   delete: deleteRecipeProcedure,

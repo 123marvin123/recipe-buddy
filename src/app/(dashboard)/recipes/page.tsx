@@ -5,6 +5,7 @@ import { api } from "~/trpc/react"
 import { EmptyPlaceholder } from "~/components/empty-placeholder"
 import { DashboardHeader } from "~/components/header"
 import { NewRecipeDialog } from "~/components/new-recipe-dialog"
+import { NewRecipeFromTextDialog } from "~/components/new-recipe-from-text-dialog"
 import { RecipeCard } from "~/components/recipe-card"
 import { DashboardShell } from "~/components/shell"
 
@@ -15,6 +16,7 @@ export default function DashboardPage() {
     <DashboardShell>
       <DashboardHeader heading="Recipes" text="Add and manage recipes.">
         <NewRecipeDialog />
+        <NewRecipeFromTextDialog />
       </DashboardHeader>
       {recipes && recipes.length > 0 ? (
         <div className="grid grid-cols-3 gap-4">

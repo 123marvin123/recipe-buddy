@@ -5,3 +5,9 @@ export const ScrapeRecipeSchema = z.object({
 })
 
 export type ScrapeRecipe = z.infer<typeof ScrapeRecipeSchema>
+
+export const ScrapeRecipeFromHTMLSchema = z.object({
+  html: z.string(),
+})
+
+export type ScrapeRecipeFromHTML = z.infer<typeof ScrapeRecipeFromHTMLSchema>

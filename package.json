@@ -38,7 +38,7 @@
     "@types/better-sqlite3": "^7.6.8",
     "@types/jsdom": "^21.1.6",
     "bcrypt": "^5.1.1",
-    "better-sqlite3": "^9.2.2",
+    "better-sqlite3": "^11.6.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",
     "cmdk": "^1.0.0",

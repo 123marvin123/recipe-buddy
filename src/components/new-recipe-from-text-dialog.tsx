@@ -5,8 +5,8 @@ import { useState } from "react"
 import { DialogBody } from "next/dist/client/components/react-dev-overlay/internal/components/Dialog"
 import { zodResolver } from "@hookform/resolvers/zod"
 import {
-  ScrapeRecipe,
-  ScrapeRecipeSchema,
+  ScrapeRecipeFromHTML,
+  ScrapeRecipeFromHTMLSchema,
 } from "~/server/api/modules/recipes/procedures/scrapeRecipeSchema"
 import { api } from "~/trpc/react"
 import { useForm } from "react-hook-form"
@@ -30,24 +30,24 @@ import {
   FormLabel,
   FormMessage,
 } from "~/components/ui/form"
-import { Input } from "~/components/ui/input"
+import { Textarea } from "~/components/ui/textarea"
 import { Icons } from "~/components/icons"
 
-interface NewRecipeDialogProps extends ButtonProps {}
-export const NewRecipeDialog = ({
+interface NewRecipeFromTextDialogProps extends ButtonProps {}
+export const NewRecipeFromTextDialog = ({
   className,
   variant,
   ...props
-}: NewRecipeDialogProps) => {
+}: NewRecipeFromTextDialogProps) => {
   const [open, setOpen] = useState(false)
 
-  const form = useForm<ScrapeRecipe>({
-    resolver: zodResolver(ScrapeRecipeSchema),
+  const form = useForm<ScrapeRecipeFromHTML>({
+    resolver: zodResolver(ScrapeRecipeFromHTMLSchema),
   })
 
   const utils = api.useContext()
 
-  const { mutate, isLoading } = api.recipe.scrape.useMutation({
+  const { mutate, isLoading } = api.recipe.scrapeHtml.useMutation({
     onSuccess: () => {
       utils.recipe.list.invalidate()
       setOpen(false)
@@ -74,37 +74,45 @@ export const NewRecipeDialog = ({
           ) : (
             <Icons.add className="mr-2 h-4 w-4" />
           )}
-          Add recipe from URL
+          Add recipe from HTML
         </button>
       </DialogTrigger>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Add Recipe</DialogTitle>
+          <DialogTitle>Add Recipe from HTML</DialogTitle>
         </DialogHeader>
         <DialogBody>
           <Form {...form}>
-            <form id="addRecipe" onSubmit={form.handleSubmit((a) => mutate(a))}>
+            <form
+              id="addRecipeFromHtml"
+              onSubmit={form.handleSubmit((a) => mutate(a))}
+            >
               <FormField
                 render={({ field }) => (
                   <FormItem>
-                    <FormLabel>URL</FormLabel>
+                    <FormLabel>HTML Content</FormLabel>
                     <FormControl>
-                      <Input autoComplete="off" {...field} />
+                      <Textarea
+                        placeholder="Enter HTML content"
+                        autoComplete={"off"}
+                        rows={10}
+                        {...field}
+                      />
                     </FormControl>
                     <FormDescription>
-                      The URL of the recipe to scrape
+                      The raw HTML content of the recipe to scrape
                     </FormDescription>
                     <FormMessage />
                   </FormItem>
                 )}
-                name="url"
+                name="html"
                 control={form.control}
               />
             </form>
           </Form>
         </DialogBody>
         <DialogFooter>
-          <Button disabled={isLoading} type="submit" form="addRecipe">
+          <Button disabled={isLoading} type="submit" form="addRecipeFromHtml">
             Add
           </Button>
         </DialogFooter>

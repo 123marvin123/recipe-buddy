@@ -26,6 +26,22 @@ async function getNodeListOfMetadataNodesFromUrl(url: string) {
   return nodeList
 }
 
+async function getNodeListOfMetadataNodesFromHtml(html: string) {
+  const dom = new JSDOM(html)
+  const nodeList: NodeList = dom.window.document.querySelectorAll(
+    "script[type='application/ld+json']"
+  )
+
+  if (nodeList.length === 0) {
+    throw new TRPCError({
+      message: "The linked page contains no metadata",
+      code: "INTERNAL_SERVER_ERROR",
+    })
+  }
+
+  return nodeList
+}
+
 function jsonObjectIsRecipe(jsonObject: Record<string, unknown>): boolean {
   const parsed = JsonLdRecipeSchema.safeParse(jsonObject)
 
@@ -92,10 +108,9 @@ export async function hydrateRecipe(url: string) {
 
   let steps: string = ""
   try {
-      steps = StepsSchema(recipeData.recipeInstructions)
-    }
-  catch(e){
-      throw new Error("Could not parse steps")
+    steps = StepsSchema(recipeData.recipeInstructions)
+  } catch (e) {
+    throw new Error("Could not parse steps")
   }
 
   const ingredients: string[] = recipeData.recipeIngredient
@@ -113,6 +128,41 @@ export async function hydrateRecipe(url: string) {
   const recipe: InsertRecipe = {
     name: recipeData.name,
     url,
+    steps: steps,
+    imageUrl: image.success ? image.data : undefined,
+    servings: servings.success ? servings.data : undefined,
+  }
+
+  return { recipe, ingredients: ings }
+}
+
+export async function hydrateRecipeFromHTML(html: string) {
+  const nodeList: NodeList = await getNodeListOfMetadataNodesFromHtml(html)
+
+  const recipeData = getSchemaRecipeFromNodeList(nodeList)
+
+  let steps: string = ""
+  try {
+    steps = StepsSchema(recipeData.recipeInstructions)
+  } catch (e) {
+    throw new Error("Could not parse steps")
+  }
+
+  const ingredients: string[] = recipeData.recipeIngredient
+    .flat()
+    .map((ingredient: string) => ingredient.trim())
+
+  const image = RecipeImageUrlSchema.safeParse(recipeData.image)
+
+  const ings: Pick<InsertIngredient, "scrapedName">[] = ingredients.map(
+    (a) => ({ scrapedName: a })
+  )
+
+  const servings = ExtractNumberSchema.safeParse(recipeData.recipeYield)
+
+  const recipe: InsertRecipe = {
+    name: recipeData.name,
+    url: "",
     steps: steps,
     imageUrl: image.success ? image.data : undefined,
     servings: servings.success ? servings.data : undefined,
