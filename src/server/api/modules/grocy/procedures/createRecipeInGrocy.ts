@@ -86,15 +86,57 @@ export const createRecipeInGrocyProcedure = protectedProcedure
 
       if (!grocyProduct) continue
 
+      const quantitiesReq = await grocyFetch(
+        `/objects/quantity_unit_conversions_resolved?query[]=product_id=${ingredient.productId}`,
+        {
+          method: "GET",
+          headers: {
+            "Content-Type": "application/json",
+          },
+        }
+      )
+
+      const quantities = await quantitiesReq.json()
+      const validQuantities = new Set<number>([
+        ...quantities.flatMap((q: { from_qu_id: number; to_qu_id: number }) => [
+          q.from_qu_id,
+          q.to_qu_id,
+        ]),
+        parseInt(grocyProduct.qu_id_stock),
+        parseInt(grocyProduct.qu_id_price),
+        parseInt(grocyProduct.qu_id_consume),
+        parseInt(grocyProduct.qu_id_purchase),
+      ])
+
+      const useAnyUnit = !validQuantities.has(parseInt(ingredient.unitId))
+      const isCorrectUnit = ingredient.unitId === grocyProduct.qu_id_stock
+
+      if (!isCorrectUnit && !useAnyUnit) {
+        const conversion = quantities.find(
+          (q: { from_qu_id: number; to_qu_id: number }) =>
+            q.from_qu_id === parseInt(ingredient.unitId) &&
+            q.to_qu_id === parseInt(grocyProduct.qu_id_stock)
+        )
+        if (conversion) {
+          ingredient.amount *= conversion.factor
+        }
+      }
+
       const body = {
         recipe_id: recipeId,
         product_id: ingredient.productId,
         amount: ingredient.amount,
         qu_id: ingredient.unitId,
-        only_check_single_unit_in_stock: "0",
+        only_check_single_unit_in_stock: useAnyUnit ? "1" : "0",
+        not_check_stock_fulfillment:
+          grocyProduct.not_check_stock_fulfillment_for_recipes === 1
+            ? "1"
+            : "0",
         note: ingredient.note,
         ingredient_group: ingredient.group,
       }
+
+      logger.info(JSON.stringify(body))
 
       const ingredientResponse = await grocyFetch("/objects/recipes_pos", {
         method: "POST",

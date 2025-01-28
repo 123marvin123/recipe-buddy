@@ -5,6 +5,10 @@ const grocyProductSchema = z.object({
   id: z.coerce.string(),
   name: z.string(),
   qu_id_stock: z.coerce.string(),
+  qu_id_purchase: z.coerce.string(),
+  qu_id_price: z.coerce.string(),
+  qu_id_consume: z.coerce.string(),
+  not_check_stock_fulfillment_for_recipes: z.number(),
 })
 
 type GrocyProduct = z.infer<typeof grocyProductSchema>
