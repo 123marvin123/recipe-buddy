@@ -4,7 +4,8 @@ What was changed in this fork:
 
 - Add **Add recipe from HTML** button to allow creating a recipe by copying a websites html code (useful for paid recipes that need auth)
 - Instead of using "any unit" if selected unit is not the same as stock unit, we will apply the corresponding unit conversion.
-- Scraping logic was changed by [JohannesFleischer](https://github.com/JohannesFleischer) to allow scraping chefkoch.de recipes.
+- Scraping logic was reworked to be more robust and to support more websites such as Cookidoo, Chefkoch and Allrecipes.
+- HowToSection and HowToStep is now correctly displayed in the recipe instructions view in Grocy.
 
 ## How you can have a go
 
