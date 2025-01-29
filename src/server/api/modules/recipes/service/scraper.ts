@@ -1,10 +1,12 @@
 import { TRPCError } from "@trpc/server"
 import {
   beautifyInstructions,
-  parseRecipeJson,
+  ImageObjectSchema,
+  RecipeSchema,
 } from "~/server/api/modules/recipes/service/schemas"
 import { InsertIngredient, InsertRecipe } from "~/server/db/schema"
 import { JSDOM } from "jsdom"
+import { z } from "zod"
 
 import { logger } from "~/lib/logger"
 
@@ -40,21 +42,13 @@ async function getNodeListOfMetadataNodesFromHtml(html: string) {
   return nodeList
 }
 
-function jsonObjectIsRecipe(jsonObject: Record<string, unknown>): boolean {
-  try {
-    const parsed = parseRecipeJson(JSON.stringify(jsonObject))
-    return parsed != null
-  } catch (e) {
-    logger.error(e)
-    return false
-  }
-}
-
 function jsonObjectHasGraph(jsonObject: Record<string, unknown>): boolean {
   return Object.prototype.hasOwnProperty.call(jsonObject, "@graph")
 }
 
-function getSchemaRecipeFromNodeList(nodeList: NodeList) {
+function getSchemaRecipeFromNodeList(
+  nodeList: NodeList
+): z.infer<typeof RecipeSchema> {
   for (const node of nodeList.values()) {
     const { textContent } = node
 
@@ -79,18 +73,20 @@ function getSchemaRecipeFromNodeList(nodeList: NodeList) {
     if (Array.isArray(parsedNodeContent)) {
       console.log("its an array")
       for (const metadataObject of parsedNodeContent) {
-        if (jsonObjectIsRecipe(metadataObject)) {
-          return metadataObject
+        const recipe = RecipeSchema.safeParse(metadataObject)
+        if (recipe.success) {
+          return recipe.data
         }
       }
     } else {
-      if (jsonObjectIsRecipe(parsedNodeContent)) {
+      if (RecipeSchema.safeParse(parsedNodeContent).success) {
         return parsedNodeContent
       }
       if (jsonObjectHasGraph(parsedNodeContent)) {
         for (const graphNode of parsedNodeContent["@graph"]) {
-          if (jsonObjectIsRecipe(graphNode)) {
-            return graphNode
+          const recipe = RecipeSchema.safeParse(graphNode)
+          if (recipe.success) {
+            return recipe.data
           }
         }
       }
@@ -100,20 +96,23 @@ function getSchemaRecipeFromNodeList(nodeList: NodeList) {
 }
 
 function queryRecipeImageUrl(recipeData: Record<string, unknown>) {
-  if (Array.isArray(recipeData.image)) {
+  if (Array.isArray(recipeData.image) && recipeData.image.length > 0) {
     return recipeData.image[0]
   }
   if (typeof recipeData.image === "string") {
     return recipeData.image
   }
-  if (typeof recipeData.image === "object") {
-    return recipeData.image.url
+  if (ImageObjectSchema.safeParse(recipeData.image).success) {
+    return (recipeData.image as z.infer<typeof ImageObjectSchema>).url
   }
   return undefined
 }
 
 function queryRecipeServings(recipeData: Record<string, unknown>) {
-  if (Array.isArray(recipeData.recipeYield)) {
+  if (
+    Array.isArray(recipeData.recipeYield) &&
+    recipeData.recipeYield.length > 0
+  ) {
     return recipeData.recipeYield[0]
   }
   if (typeof recipeData.recipeYield === "string") {
@@ -124,42 +123,16 @@ function queryRecipeServings(recipeData: Record<string, unknown>) {
 
 export async function hydrateRecipe(url: string) {
   const nodeList: NodeList = await getNodeListOfMetadataNodesFromUrl(url)
-
-  const recipeDataString = JSON.stringify(getSchemaRecipeFromNodeList(nodeList))
-  const recipeData = parseRecipeJson(recipeDataString)
-
-  if (!recipeData) {
-    throw new Error("Invalid recipe data")
-  }
-
-  const ingredients: string[] = recipeData.recipeIngredient
-    .flat()
-    .map((ingredient: string) => ingredient.trim())
-
-  const ings: Pick<InsertIngredient, "scrapedName">[] = ingredients.map(
-    (a) => ({ scrapedName: a })
-  )
-
-  const recipe: InsertRecipe = {
-    name: recipeData.name,
-    url: "",
-    steps: beautifyInstructions(recipeData.recipeInstructions),
-    imageUrl: queryRecipeImageUrl(recipeData),
-    servings: queryRecipeServings(recipeData),
-  }
-
-  return { recipe, ingredients: ings }
+  return createRecipeData(nodeList)
 }
 
 export async function hydrateRecipeFromHTML(html: string) {
   const nodeList: NodeList = await getNodeListOfMetadataNodesFromHtml(html)
+  return createRecipeData(nodeList)
+}
 
-  const recipeDataString = JSON.stringify(getSchemaRecipeFromNodeList(nodeList))
-  const recipeData = parseRecipeJson(recipeDataString)
-
-  if (!recipeData) {
-    throw new Error("Invalid recipe data")
-  }
+async function createRecipeData(nodeList: NodeList) {
+  const recipeData = getSchemaRecipeFromNodeList(nodeList)
 
   const ingredients: string[] = recipeData.recipeIngredient
     .flat()
@@ -172,7 +145,7 @@ export async function hydrateRecipeFromHTML(html: string) {
   const recipe: InsertRecipe = {
     name: recipeData.name,
     url: "",
-    steps: beautifyInstructions(recipeData.recipeInstructions),
+    steps: await beautifyInstructions(recipeData),
     imageUrl: queryRecipeImageUrl(recipeData),
     servings: queryRecipeServings(recipeData),
   }

@@ -9,6 +9,10 @@ const GrocyStatusSchema = z.object({
   }),
 })
 
+const GrocySystemConfigSchema = z.object({
+  LOCALE: z.string(),
+})
+
 export const checkGrocyConnectionProcedure = protectedProcedure.query(
   async () => {
     const res = await grocyFetch(`/system/info`)
@@ -18,3 +22,11 @@ export const checkGrocyConnectionProcedure = protectedProcedure.query(
     return GrocyStatusSchema.safeParse(body)
   }
 )
+
+export const checkGrocyLanguage = async () => {
+  const res = await grocyFetch(`/system/config`)
+
+  const body = await res.json()
+
+  return GrocySystemConfigSchema.safeParse(body)
+}
