@@ -6,6 +6,7 @@ What was changed in this fork:
 - Instead of using "any unit" if selected unit is not the same as stock unit, we will apply the corresponding unit conversion.
 - Scraping logic was reworked to be more robust and to support more websites such as Cookidoo, Chefkoch and Allrecipes.
 - HowToSection and HowToStep is now correctly displayed in the recipe instructions view in Grocy.
+- Adds nutritional information if available at the end of the instructions
 
 ## How you can have a go
 
