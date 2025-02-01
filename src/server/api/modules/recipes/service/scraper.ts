@@ -108,17 +108,29 @@ function queryRecipeImageUrl(recipeData: Record<string, unknown>) {
   return undefined
 }
 
-function queryRecipeServings(recipeData: Record<string, unknown>) {
-  if (
-    Array.isArray(recipeData.recipeYield) &&
-    recipeData.recipeYield.length > 0
-  ) {
-    return recipeData.recipeYield[0]
+function queryRecipeServings(
+  recipeYield: z.infer<typeof RecipeSchema>["recipeYield"]
+) {
+  let element: string | undefined = undefined
+
+  if (Array.isArray(recipeYield) && recipeYield.length > 0) {
+    element = recipeYield[0]
   }
-  if (typeof recipeData.recipeYield === "string") {
-    return recipeData.recipeYield
+  if (typeof recipeYield === "string") {
+    element = recipeYield
   }
-  return undefined
+
+  let res = 0
+  if (element && !isNaN(Number(element))) {
+    res = Number(element)
+  } else if (element) {
+    const match = element.match(/^\d+/)
+    if (match) {
+      res = Number(match[0])
+    }
+  }
+
+  return res
 }
 
 export async function hydrateRecipe(url: string) {
@@ -147,7 +159,20 @@ async function createRecipeData(nodeList: NodeList) {
     url: "",
     steps: await beautifyInstructions(recipeData),
     imageUrl: queryRecipeImageUrl(recipeData),
-    servings: queryRecipeServings(recipeData),
+    servings: queryRecipeServings(recipeData.recipeYield),
+    videoUrl: recipeData.video?.contentUrl,
+    calories: recipeData.nutrition?.calories,
+    nutritionServings: recipeData.nutrition?.servingSize,
+    carbohydrateContent: recipeData.nutrition?.carbohydrateContent,
+    cholesterolContent: recipeData.nutrition?.cholesterolContent,
+    fatContent: recipeData.nutrition?.fatContent,
+    fiberContent: recipeData.nutrition?.fiberContent,
+    proteinContent: recipeData.nutrition?.proteinContent,
+    saturatedFatContent: recipeData.nutrition?.saturatedFatContent,
+    sodiumContent: recipeData.nutrition?.sodiumContent,
+    sugarContent: recipeData.nutrition?.sugarContent,
+    transFatContent: recipeData.nutrition?.transFatContent,
+    unsaturatedFatContent: recipeData.nutrition?.unsaturatedFatContent,
   }
 
   return { recipe, ingredients: ings }

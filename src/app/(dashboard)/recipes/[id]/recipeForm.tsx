@@ -105,7 +105,7 @@ function RecipeFormInner({
           />
           <Link
             href={recipe.url}
-            className="text-muted-foreground pl-1 text-lg"
+            className="pl-1 text-lg text-muted-foreground"
             target="_blank"
           >
             View Original
@@ -113,6 +113,32 @@ function RecipeFormInner({
         </div>
         <div className="flex flex-col gap-2">
           <IngredientTable grocyBaseUrl={grocyBaseUrl ?? ""} />
+          <div className="flex flex-row gap-2 self-end">
+            <FormField
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2">
+                  <FormControl>
+                    <input type="checkbox" {...field} />
+                  </FormControl>
+                  <FormLabel>Embed YouTube Video</FormLabel>
+                </FormItem>
+              )}
+              name="embedYoutubeUrl"
+              control={form.control}
+            />
+            <FormField
+              render={({ field }) => (
+                <FormItem className="flex items-center gap-2">
+                  <FormControl>
+                    <input type="checkbox" {...field} />
+                  </FormControl>
+                  <FormLabel>Embed Nutritional Information</FormLabel>
+                </FormItem>
+              )}
+              name="embedNutritionalInformation"
+              control={form.control}
+            />
+          </div>
           <Button type="submit" isLoading={mutLoading} className="self-end">
             Create Recipe
           </Button>

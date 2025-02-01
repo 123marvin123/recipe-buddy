@@ -41,6 +41,8 @@ export const CreateRecipeInGrocyCommandSchema = z.object({
   ingredients: IngredientSchema.array(),
   method: z.string().optional(),
   imageUrl: z.string().url().optional(),
+  embedYoutubeUrl: z.boolean().default(false),
+  embedNutritionalInformation: z.boolean().default(false),
   servings: numberLikeToNumberAtLeastOne.optional(),
 })
 

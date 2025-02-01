@@ -7,7 +7,6 @@ import {
 } from "drizzle-orm/sqlite-core"
 
 export const sqLiteTable = sqliteTableCreator((name) => `recipe-buddy_${name}`)
-
 export const recipes = sqLiteTable("recipe", {
   id: integer("id", { mode: "number" }).primaryKey({ autoIncrement: true }),
   name: text("name", { length: 256 }).notNull(),
@@ -15,6 +14,19 @@ export const recipes = sqLiteTable("recipe", {
   steps: text("steps"),
   imageUrl: text("imageUrl", { length: 256 }),
   servings: integer("servings", { mode: "number" }),
+  videoUrl: text("videoUrl", { length: 512 }),
+  calories: text("calories"),
+  nutritionServings: text("nutritionServings"),
+  carbohydrateContent: text("carbohydrateContent"),
+  cholesterolContent: text("cholesterolContent"),
+  fatContent: text("fatContent"),
+  fiberContent: text("fiberContent"),
+  proteinContent: text("proteinContent"),
+  saturatedFatContent: text("saturatedFatContent"),
+  sodiumContent: text("sodiumContent"),
+  sugarContent: text("sugarContent"),
+  transFatContent: text("transFatContent"),
+  unsaturatedFatContent: text("unsaturatedFatContent"),
 })
 
 export const recipeRelations = relations(recipes, ({ many }) => ({

@@ -5,7 +5,14 @@ import {
 import { grocyFetch } from "~/server/api/modules/grocy/service/client"
 import { getGrocyProducts } from "~/server/api/modules/grocy/service/getGrocyProducts"
 import { deleteRecipe } from "~/server/api/modules/recipes/service/deleteRecipe"
+import {
+  NutritionInformation,
+  supplementInstructionsWithNutrition,
+} from "~/server/api/modules/recipes/service/schemas"
 import { protectedProcedure } from "~/server/api/trpc"
+import { db } from "~/server/db"
+import { recipes as recipeTable } from "~/server/db/schema"
+import { eq } from "drizzle-orm"
 import normalizeUrl from "normalize-url"
 import slugify from "slugify"
 import { v4 } from "uuid"
@@ -19,6 +26,9 @@ export const createRecipeInGrocyProcedure = protectedProcedure
     let imageFilename: string | undefined = undefined
 
     const grocyProducts = await getGrocyProducts()
+    const originalRecipe = await db.query.recipes.findFirst({
+      where: eq(recipeTable.id, input.recipeBuddyRecipeId),
+    })
 
     if (input.imageUrl) {
       const normalised = normalizeUrl(input.imageUrl, {
@@ -53,6 +63,43 @@ export const createRecipeInGrocyProcedure = protectedProcedure
     }
 
     logger.info(input, "Creating recipe in Grocy")
+
+    if (input.embedNutritionalInformation && originalRecipe) {
+      const nutrition = NutritionInformation.safeParse({
+        "@type": "NutritionInformation",
+        calories: originalRecipe.calories ?? undefined,
+        carbohydrateContent: originalRecipe.carbohydrateContent ?? undefined,
+        cholesterolContent: originalRecipe.cholesterolContent ?? undefined,
+        fatContent: originalRecipe.fatContent ?? undefined,
+        fiberContent: originalRecipe.fiberContent ?? undefined,
+        proteinContent: originalRecipe.proteinContent ?? undefined,
+        saturatedFatContent: originalRecipe.saturatedFatContent ?? undefined,
+        sodiumContent: originalRecipe.sodiumContent ?? undefined,
+        sugarContent: originalRecipe.sugarContent ?? undefined,
+        transFatContent: originalRecipe.transFatContent ?? undefined,
+        unsaturatedFatContent:
+          originalRecipe.unsaturatedFatContent ?? undefined,
+      })
+
+      if (nutrition.success) {
+        input.method += await supplementInstructionsWithNutrition(
+          nutrition.data,
+          originalRecipe.nutritionServings ??
+            originalRecipe.servings?.toString() ??
+            undefined
+        )
+      } else {
+        logger.error(nutrition.error, "Failed to parse nutrition information")
+      }
+    }
+
+    if (input.embedYoutubeUrl && originalRecipe?.videoUrl) {
+      const youtubeId = originalRecipe.videoUrl
+        .replace("https://www.youtube.com/watch?v=", "")
+        .replace("https://youtu.be/", "")
+
+      input.method += `<p><iframe frameborder="0" src="//www.youtube.com/embed/${youtubeId}" width="640" height="360" class="note-video-clip"></iframe><br></p>`
+    }
 
     const recipeBody = {
       name: input.recipeName,

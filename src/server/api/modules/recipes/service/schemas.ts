@@ -16,6 +16,14 @@ const HowToSectionSchema = z.object({
   ]),
 })
 
+const VideoObjectSchema = z.object({
+  "@type": z.literal("VideoObject"),
+  name: z.string().optional(),
+  description: z.string().optional(),
+  contentUrl: z.string().url().optional(),
+  uploadDate: z.string().optional(),
+})
+
 export const ImageObjectSchema = z.object({
   "@type": z.literal("ImageObject"),
   url: z.string(),
@@ -58,10 +66,12 @@ export const RecipeSchema = z.object({
     .optional(),
   recipeYield: z.union([z.string(), z.array(z.string())]).optional(),
   nutrition: z.lazy(() => NutritionInformation).optional(),
+  video: z.lazy(() => VideoObjectSchema).optional(),
 })
 
-async function supplementInstructionsWithNutrition(
-  recipe: z.infer<typeof RecipeSchema>
+export async function supplementInstructionsWithNutrition(
+  nutrition: z.infer<typeof NutritionInformation>,
+  servingSize: string | undefined = undefined
 ) {
   const translations = {
     en: {
@@ -124,23 +134,16 @@ async function supplementInstructionsWithNutrition(
     >) || (translatedKeys["en"] as Record<string, string>)
 
   let result = `<h3>${headers.nutrients}</h3><table style="border-spacing: 10px;"><thead><tr><th>${headers.nutrient}</th><th>${headers.amount}</th></tr></thead><tbody>`
-  if (recipe.nutrition) {
-    for (const [key, value] of Object.entries(recipe.nutrition)) {
-      if (key === "@type" || key === "servingSize") continue
-      result += `<tr><td>${keys[key]}</td><td>${value}</td></tr>`
-    }
 
-    result += "</tbody></table><br><br>"
+  for (const [key, value] of Object.entries(nutrition)) {
+    if (key === "@type" || key === "servingSize" || !value) continue
+    result += `<tr><td>${keys[key]}</td><td>${value}</td></tr>`
+  }
 
-    if (recipe.nutrition.servingSize) {
-      result += `<p>${keys.servingSize}: ${recipe.nutrition.servingSize}</p>`
-    } else if (recipe.recipeYield) {
-      if (Array.isArray(recipe.recipeYield) && recipe.recipeYield.length > 0) {
-        result += `<p>${keys.servingSize}: ${recipe.recipeYield[0]}</p>`
-      } else {
-        result += `<p>${keys.servingSize}: ${recipe.recipeYield}</p>`
-      }
-    }
+  result += "</tbody></table><br>"
+
+  if (servingSize) {
+    result += `<p>${keys.servingSize}: ${servingSize}</p>`
   }
 
   return result
@@ -187,8 +190,6 @@ export async function beautifyInstructions(
     if (inOl) {
       result += "</ol>"
     }
-
-    result += await supplementInstructionsWithNutrition(recipe)
 
     return result
   }
